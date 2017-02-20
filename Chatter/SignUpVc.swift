@@ -7,6 +7,10 @@
 //
 
 import UIKit
+import AWSCore
+import AWSS3
+import AWSCognito
+
 
 class SignUpVc: UIViewController, UINavigationControllerDelegate, UIImagePickerControllerDelegate, UITextFieldDelegate{
     
@@ -15,6 +19,8 @@ class SignUpVc: UIViewController, UINavigationControllerDelegate, UIImagePickerC
     @IBOutlet weak var usernameTxt: UITextField!
     @IBOutlet weak var passwordTxt: UITextField!
     @IBOutlet weak var signupBtn: UIButton!
+    
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -100,9 +106,124 @@ class SignUpVc: UIViewController, UINavigationControllerDelegate, UIImagePickerC
         }
     }
     
+    func getDocumentsDirectory() -> URL {
+        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        let documentsDirectory = paths[0]
+        return documentsDirectory
+    }
+    
     @IBAction func signupBtnClick(_ sender: Any) {
         
-        var user = 
+        let rootURL = "https://rails-api-test-crcnum4.c9users.io/"
+        
+        let username = usernameTxt.text!
+        let password = passwordTxt.text!
+        
+        let params = "user=\(username)&pass=\(password)"
+        let url = URL(string: rootURL + "register?" + params.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!)
+        
+        let request = NSMutableURLRequest(url: url!)
+        request.httpMethod = "POST"
+        
+        let task = URLSession.shared.dataTask(with: request as URLRequest) { (data, responce, error) in
+            if error != nil {
+                print(error ?? "no errors")
+            } else {
+                if let urlContent = data {
+                    do {
+                        
+                        let jsonResult = try JSONSerialization.jsonObject(with: urlContent, options: JSONSerialization.ReadingOptions.mutableContainers) as! NSDictionary
+                        
+                        let status = jsonResult.value(forKey: "status") as! String
+                        
+                        if status == "error" {
+                            print("Error: \(jsonResult.value(forKey: "message") as! String)")
+                        }
+                        
+                        if status == "success" {
+                            DispatchQueue.main.async {
+                                let filename = jsonResult.value(forKey: "imgurl") as! String
+                                if let imageData = UIImageJPEGRepresentation(self.profileImg.image!, 0.8) {
+                                    let fileURL = self.getDocumentsDirectory().appendingPathComponent(filename)
+                                    print("fileURL \(fileURL)")
+                                    try? imageData.write(to: fileURL)
+                                    
+                                    let uploadRequest = AWSS3TransferManagerUploadRequest()
+                                    uploadRequest!.bucket = "3cschatapp"
+                                    uploadRequest!.key = filename
+                                    print(self.getDocumentsDirectory().appendingPathComponent(filename))
+                                    uploadRequest!.body = self.getDocumentsDirectory().appendingPathComponent(filename)
+                                    print("body: \(uploadRequest!.body)")
+                                    
+                                    let transferManager = AWSS3TransferManager.default()
+                                    
+                                    transferManager.upload(uploadRequest!).continueWith(executor: AWSExecutor.mainThread(), block: { (task:AWSTask<AnyObject>) -> Any? in
+                                        if let error = task.error as? NSError {
+                                            if error.domain == AWSS3TransferManagerErrorDomain, let code = AWSS3TransferManagerErrorType(rawValue: error.code) {
+                                                switch code {
+                                                case .cancelled, .paused:
+                                                    break
+                                                default:
+                                                    print("Error uploading: \(uploadRequest!.key!) Error: \(error)")
+                                                }
+                                            } else {
+                                                print("Error uploading: \(uploadRequest!.key!) Error: \(error)")
+                                            }
+                                            return nil
+                                        }
+                                        
+                                        let uploadOutput = task.result
+                                        print("Upload complete for: \(uploadRequest!.key)")
+                                        print("Upload Output contents: \(uploadOutput)")
+                                        return nil
+                                    })
+                                }
+                            }
+                        }
+                        
+                    } catch {
+                        print("error creating user")
+                    }
+                }
+            }
+        }
+        task.resume()
+        
+        
+//        if let imageData = UIImageJPEGRepresentation(self.profileImg.image!, 0.8) {
+//            let filename = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("profileimg\(username).jpg")
+//            try? imageData.write(to: filename)
+//            
+//            let uploadRequest = AWSS3TransferManagerUploadRequest()
+//            uploadRequest?.bucket = "3cschatapp"
+//            uploadRequest?.key = "profileimg\(username).jpg"
+//            uploadRequest?.body = filename
+//            
+//            transferManager.upload(uploadRequest!).continueWith(executor: AWSExecutor.mainThread(), block: { (task:AWSTask<AnyObject>) -> Any? in
+//                if let error = task.error as? NSError {
+//                    if error.domain == AWSS3TransferManagerErrorDomain, let code = AWSS3TransferManagerErrorType(rawValue: error.code) {
+//                        switch code {
+//                        case .cancelled, .paused:
+//                            break
+//                        default:
+//                             print("Error uploading: \(uploadRequest!.key) Error: \(error)")
+//                        }
+//                    } else {
+//                        print("Error uploading: \(uploadRequest!.key) Error: \(error)")
+//                    }
+//                    return nil
+//                }
+//                
+//                let uploadOutput = task.result
+//                print("Upload complete for: \(uploadRequest!.key)")
+//                print("Upload Output contents: \(uploadOutput)")
+//                return nil
+//            })
+//            
+//        }
+        
+        
+        
     }
     
     

@@ -22,7 +22,7 @@
 #import <AVFoundation/AVFoundation.h>
 
 NSString *const AWSInfoInteractionKit = @"LexInteractionKit";
-NSString *const AWSInteractionKitSDKVersion = @"2.5.1";
+NSString *const AWSInteractionKitSDKVersion = @"2.5.0";
 NSString *const AWSInternalLexInteractionKit = @"LexInteractionKitClient";
 NSString *const AWSLexInteractionKitUserAgent = @"interactionkit";
 NSString *const AWSLexInteractionKitErrorDomain = @"com.amazonaws.AWSLexInteractionKitErrorDomain";
@@ -35,13 +35,6 @@ NSString *const AWSLexAcceptText = @"text/plain; charset=utf-8";
 
 NSString *const AWSLexInteractionKitConfigBotName = @"BotName";
 NSString *const AWSLexInteractionKitConfigBotAlias = @"BotAlias";
-
-/** 
- Constant synchronized lock string object used by releaseAudioSource method.
- Note that this should not used in any other place.
- */
-NSString *const AWSLexInteractionKitReleaseAudioSourceLockObject = @"AWSLexInteractionKit.releaseAudioSource";
-
 
 const NSUInteger DefaultInteractionKitStartingPointThreshold = 9;
 const NSUInteger DefaultInteractionKitEndpointThreshold = 80;
@@ -324,8 +317,12 @@ static AWSSynchronizedMutableDictionary *_serviceClients = nil;
 - (void)cancel {
     @synchronized (self) {
         [self resetStates];
-        [self releaseAudioSource];
         
+        if(audioSource) {
+            audioSource.delegate = nil;
+            [audioSource stop];
+            audioSource = nil;
+        }
         if(postRequest) {
             [postRequest cancel];
         }
@@ -426,13 +423,9 @@ static AWSSynchronizedMutableDictionary *_serviceClients = nil;
         switch (speechState) {
             case AWSLexSpeechStateUninitialized:{
                 NSTimeInterval noSpeechTimout = [[NSDate date] timeIntervalSinceDate:recordingStartDate];
-                if (noSpeechTimout > self.interactionKitConfig.noSpeechTimeoutInterval) {
+                if(noSpeechTimout > self.interactionKitConfig.noSpeechTimeoutInterval) {
                     AWSLogVerbose(@"no speech for interval %f", noSpeechTimout);
                     [self handleNoSpeechTimeout];
-                } else {
-                    // Add beginning of audio. Without this, voice will not be recognized due to missing audio stream.
-                    // For example, "Three"  would become "e" or "d"
-                    [self streamAudio:audioData];
                 }
                 isEndpointed = NO;
                 audioStartpointedTime = nil;
@@ -496,21 +489,6 @@ static AWSSynchronizedMutableDictionary *_serviceClients = nil;
 }
 
 #pragma mark - private methods
-
-/**
- Safely stop and release audioSource.
- */
-- (void)releaseAudioSource {
-    @synchronized (AWSLexInteractionKitReleaseAudioSourceLockObject) {
-        if (audioSource) {
-            // we will reset the delegate to nil,
-            // so that the end event doesnt fire when we cann stop.
-            audioSource.delegate = nil;
-            [audioSource stop];
-            audioSource = nil;
-        }
-    }
-}
 
 - (void)resetStates{
     isListening = NO;
@@ -603,8 +581,9 @@ static AWSSynchronizedMutableDictionary *_serviceClients = nil;
         isListening = NO;
         [producerStream close];
         producerStream.delegate = nil;
-        
-        [self releaseAudioSource];
+        audioSource.delegate = nil;
+        [audioSource stop];
+        audioSource = nil;
     }
 }
 
@@ -739,7 +718,11 @@ static AWSSynchronizedMutableDictionary *_serviceClients = nil;
         isStreaming = NO;
         resumeListening = NO;
         
-        [self releaseAudioSource];
+        if(audioSource) {
+            audioSource.delegate = nil; //to stop he audio source delegate from firing.
+            [audioSource stop];
+            audioSource = nil;
+        }
         
         postRequest = nil;
         
@@ -871,7 +854,13 @@ static AWSSynchronizedMutableDictionary *_serviceClients = nil;
             [postRequest cancel];
         
         //stop the audio source
-        [self releaseAudioSource];
+        if(audioSource) {
+            //we will reset the delegate to nil,
+            //so that the end event doesnt fire when we cann stop.
+            audioSource.delegate = nil;
+            [audioSource stop];
+            audioSource  = nil;
+        }
         
         [self dispatchBlockOnInteractionDelegateQueue:^{
             if(self.interactionDelegate && [self.interactionDelegate respondsToSelector:@selector(interactionKit:onError:)]) {
