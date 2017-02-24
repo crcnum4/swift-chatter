@@ -15,6 +15,7 @@ class UserVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
     @IBOutlet weak var resultsTable: UITableView!
     
     var resultsUsers:Array = [] as Array
+    var userImg = ""
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -25,8 +26,6 @@ class UserVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
         let theHeight = view.frame.size.height
         
         resultsTable.frame = CGRect(x: 0, y: 0, width: theWidth, height: theHeight-64)
-        
-        
         
     }
 
@@ -58,6 +57,7 @@ class UserVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
                         
                         if status == "success" {
                             DispatchQueue.main.async {
+                                self.userImg = jsonResult.value(forKey: "userimg") as! String
                                 self.resultsUsers = jsonResult.value(forKey: "users") as! Array<Any>
                                 self.resultsTable.reloadData()
                             }
@@ -89,38 +89,44 @@ class UserVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
         let aUser = resultsUsers[indexPath.row] as! NSDictionary
         
         cell.profileNameLabel.text = aUser.value(forKey: "username") as! String?
-        let idnum = aUser.value(forKey: "id") as! NSNumber
-        cell.usernameLabel.text =  "\(idnum.intValue)"
+        
         
         let filename = aUser.value(forKey: "profile_url") as! String
+        cell.usernameLabel.text =  filename
         
         let downloadingFileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(filename)
         
-        let downloadRequest = AWSS3TransferManagerDownloadRequest()
-        downloadRequest!.bucket = "3cschatapp"
-        downloadRequest!.key = filename
-        downloadRequest!.downloadingFileURL = downloadingFileURL
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: downloadingFileURL.path) {
+            cell.profileImage.image = UIImage(contentsOfFile: downloadingFileURL.path)
+        } else {
         
-        
-        transferManager.download(downloadRequest!).continueWith(executor: AWSExecutor.mainThread(), block: { (task:AWSTask<AnyObject>) -> Any? in
+            let downloadRequest = AWSS3TransferManagerDownloadRequest()
+            downloadRequest!.bucket = "3cschatapp"
+            downloadRequest!.key = filename
+            downloadRequest!.downloadingFileURL = downloadingFileURL
             
-            if let error = task.error as? NSError {
-                if error.domain == AWSS3TransferManagerErrorDomain, let code = AWSS3TransferManagerErrorType(rawValue: error.code) {
-                    switch code {
-                    case .cancelled, .paused:
-                        break
-                    default:
+            
+            transferManager.download(downloadRequest!).continueWith(executor: AWSExecutor.mainThread(), block: { (task:AWSTask<AnyObject>) -> Any? in
+                
+                if let error = task.error as? NSError {
+                    if error.domain == AWSS3TransferManagerErrorDomain, let code = AWSS3TransferManagerErrorType(rawValue: error.code) {
+                        switch code {
+                        case .cancelled, .paused:
+                            break
+                        default:
+                            print("Error downloading: \(downloadRequest?.key) Error: \(error)")
+                        }
+                    } else {
                         print("Error downloading: \(downloadRequest?.key) Error: \(error)")
                     }
-                } else {
-                    print("Error downloading: \(downloadRequest?.key) Error: \(error)")
+                    return nil
                 }
+                //successful download
+                cell.profileImage.image = UIImage(contentsOfFile: downloadingFileURL.path)
                 return nil
-            }
-            //successful download
-            cell.profileImage.image = UIImage(contentsOfFile: downloadingFileURL.path)
-            return nil
-        })
+            })
+        }
         return cell
     }
     
@@ -136,6 +142,9 @@ class UserVC: UIViewController, UITableViewDataSource, UITableViewDelegate {
         let cell = tableView.cellForRow(at: indexPath) as! ResultsCell
         
         otherUser = cell.profileNameLabel.text!
+        myImg = userImg
+        oppImg = cell.usernameLabel.text!
+        
         self.performSegue(withIdentifier: "toConversationVC", sender: self)
     }
     

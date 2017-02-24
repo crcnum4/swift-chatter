@@ -12,9 +12,10 @@ import AWSS3
 import AWSCognito
 
 var otherUser = ""
-var time = ""
+var myImg = ""
+var oppImg = ""
 
-class conversationVC: UIViewController, UIScrollViewDelegate {
+class conversationVC: UIViewController, UIScrollViewDelegate, UITextViewDelegate {
 
     @IBOutlet weak var resultsScrollView: UIScrollView!
     @IBOutlet weak var frameMessageView: UIView!
@@ -31,11 +32,18 @@ class conversationVC: UIViewController, UIScrollViewDelegate {
     var messageY: CGFloat = 26.0
     var frameX: CGFloat = 32.0
     var frameY: CGFloat = 21.0
+    var imageX: CGFloat = 3
+    var imageY: CGFloat = 3
+    
+    var myImgFile:UIImage? = UIImage()
+    var oppImgFile:UIImage? = UIImage()
     
     var messageArray:Array = [] as Array
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        self.messageTextView.delegate = self
 
         // Do any additional setup after loading the view.
         
@@ -59,6 +67,91 @@ class conversationVC: UIViewController, UIScrollViewDelegate {
         mLbl.textColor = UIColor.lightGray
         messageTextView.addSubview(mLbl)
         
+        NotificationCenter.default.addObserver(self, selector: #selector(conversationVC.keyboardWasShown), name: NSNotification.Name.UIKeyboardDidShow, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(conversationVC.keyboardWillHide), name: NSNotification.Name.UIKeyboardWillHide, object: nil)
+        
+        let tapScrollViewGesture = UITapGestureRecognizer(target: self, action: #selector(conversationVC.didTapScrollView))
+        tapScrollViewGesture.numberOfTapsRequired = 1
+        resultsScrollView.addGestureRecognizer(tapScrollViewGesture)
+    }
+    
+    func didTapScrollView() {
+        self.view.endEditing(true)
+    }
+    
+    func textViewDidChange(_ textView: UITextView) {
+        if !messageTextView.hasText {
+            self.mLbl.isHidden = false
+        } else {
+            self.mLbl.isHidden = true
+        }
+    }
+    
+    func textViewDidEndEditing(_ textView: UITextView) {
+        if !messageTextView.hasText {
+            self.mLbl.isHidden = false
+        }
+    }
+    
+    func keyboardWasShown(notification:NSNotification) {
+        
+        let dict:NSDictionary = notification.userInfo! as NSDictionary
+        let s:NSValue = dict.value(forKey: UIKeyboardFrameEndUserInfoKey) as! NSValue
+        let rect:CGRect = s.cgRectValue
+        
+        UIView.animate(withDuration: 0.3, delay: 0, options: .curveLinear, animations: {
+            
+            self.resultsScrollView.frame.origin.y = self.scrollViewOriginalY - rect.height
+            self.frameMessageView.frame.origin.y = self.frameMessageOriginalY - rect.height
+            
+            let bottomOffset:CGPoint = CGPoint(x: 0, y: self.resultsScrollView.contentSize.height - self.resultsScrollView.bounds.size.height)
+            self.resultsScrollView.setContentOffset(bottomOffset, animated: false)
+            
+        }, completion: {
+            (finished:Bool) in
+        })
+        
+    }
+    
+    func keyboardWillHide(notification:NSNotification) {
+//        let dict:NSDictionary = notification.userInfo! as NSDictionary
+//        let s:NSValue = dict.value(forKey: UIKeyboardFrameEndUserInfoKey) as! NSValue
+//        let rect:CGRect = s.cgRectValue
+        
+        UIView.animate(withDuration: 0.3, delay: 0, options: .curveLinear, animations: {
+            
+            self.resultsScrollView.frame.origin.y = self.scrollViewOriginalY
+            self.frameMessageView.frame.origin.y = self.frameMessageOriginalY
+            
+            let bottomOffset:CGPoint = CGPoint(x: 0, y: self.resultsScrollView.contentSize.height - self.resultsScrollView.bounds.size.height)
+            self.resultsScrollView.setContentOffset(bottomOffset, animated: false)
+            
+        }, completion: {
+            (finished:Bool) in
+        })
+        
+        
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        //get the current user first
+        var downloadingFileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(myImg)
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: downloadingFileURL.path) {
+            myImgFile = UIImage(contentsOfFile: downloadingFileURL.path)
+        } else {
+            myImgFile = UIImage(named: "User_000000_100")
+        }
+        
+        //get opp file now
+        
+        downloadingFileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(oppImg)
+        if fileManager.fileExists(atPath: downloadingFileURL.path) {
+            oppImgFile = UIImage(contentsOfFile: downloadingFileURL.path)
+        } else {
+            oppImgFile = UIImage(named: "User_000000_100")
+        }
+        
         refreshResults()
         
     }
@@ -71,12 +164,14 @@ class conversationVC: UIViewController, UIScrollViewDelegate {
     func refreshResults() {
         
         let theWidth = view.frame.size.width
-        let theHeight = view.frame.size.height
+//        let theHeight = view.frame.size.height
         
         messageX = 37.0
         messageY = 26.0
         frameX = 32.0
         frameY = 21.0
+        imageX = 3
+        imageY = 3
         
         messageArray.removeAll(keepingCapacity: false)
         
@@ -103,6 +198,10 @@ class conversationVC: UIViewController, UIScrollViewDelegate {
                         if status == "success" {
                             DispatchQueue.main.async {
                                 self.messageArray = jsonResult.value(forKey: "messages") as! Array<Any>
+                                
+                                for subView in self.resultsScrollView.subviews {
+                                    subView.removeFromSuperview()
+                                }
                                 
                                 for i in 0 ..< self.messageArray.count {
                                     
@@ -137,12 +236,23 @@ class conversationVC: UIViewController, UIScrollViewDelegate {
                                         self.resultsScrollView.addSubview(frameLbl)
                                         self.frameY += frameLbl.frame.size.height + 20
                                         
+                                        let img:UIImageView = UIImageView()
+                                        img.image = self.myImgFile
+                                        img.frame.size = CGSize(width: 34, height: 34)
+                                        img.frame.origin.x = (self.resultsScrollView.frame.size.width - self.imageX) - img.frame.size.width
+                                        img.frame.origin.y = self.imageY
+                                        img.layer.zPosition = 30
+                                        img.layer.cornerRadius = img.frame.size.width/2
+                                        img.clipsToBounds = true
+                                        self.resultsScrollView.addSubview(img)
+                                        self.imageY += frameLbl.frame.size.height + 20
+                                        
                                         self.resultsScrollView.contentSize = CGSize(width: theWidth, height: self.messageY)
                                         
                                     } else {
                                         let messageLbl:UILabel = UILabel()
                                         messageLbl.frame = CGRect(x: 0, y: 0, width: self.resultsScrollView.frame.size.width-94, height: CGFloat.greatestFiniteMagnitude)
-                                        messageLbl.backgroundColor = UIColor.green
+                                        messageLbl.backgroundColor = UIColor.lightGray
                                         messageLbl.lineBreakMode = NSLineBreakMode.byWordWrapping
                                         messageLbl.textAlignment = NSTextAlignment.left
                                         messageLbl.numberOfLines = 0
@@ -158,15 +268,27 @@ class conversationVC: UIViewController, UIScrollViewDelegate {
                                         
                                         let frameLbl:UILabel = UILabel()
                                         frameLbl.frame = CGRect(x: self.frameX, y: self.frameY, width: messageLbl.frame.size.width + 10, height: messageLbl.frame.size.height + 10)
-                                        frameLbl.backgroundColor = UIColor.green
+                                        frameLbl.backgroundColor = UIColor.lightGray
                                         frameLbl.layer.masksToBounds = true
                                         frameLbl.layer.cornerRadius = 10
                                         self.resultsScrollView.addSubview(frameLbl)
                                         self.frameY += frameLbl.frame.size.height + 20
                                         
+                                        let img:UIImageView = UIImageView()
+                                        img.image = self.oppImgFile
+                                        img.frame = CGRect(x: self.imageX, y: self.imageY, width:  34, height: 34)
+                                        img.layer.zPosition = 30
+                                        img.layer.cornerRadius = img.frame.size.width/2
+                                        img.clipsToBounds = true
+                                        self.resultsScrollView.addSubview(img)
+                                        self.imageY += frameLbl.frame.size.height + 20
+                                        
                                         self.resultsScrollView.contentSize = CGSize(width: theWidth, height: self.messageY)
 
                                     }
+                                    
+                                    let bottomOffset:CGPoint = CGPoint(x: 0, y: self.resultsScrollView.contentSize.height - self.resultsScrollView.bounds.size.height)
+                                    self.resultsScrollView.setContentOffset(bottomOffset, animated: false)
                                 }
                             }
                         }
@@ -179,6 +301,54 @@ class conversationVC: UIViewController, UIScrollViewDelegate {
         task.resume()
     }
     
+    @IBAction func sendBtn_click(_ sender: Any) {
+        messageTextView.isEditable = false
+        if messageTextView.text == "" {
+            print("no text")
+        } else {
+            let params = "user=\(CurrentUser)&opp=\(otherUser)&message=\(messageTextView.text!)"
+            
+            let url = URL(string: rootURL + "send?" + params.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!)
+            let request = NSMutableURLRequest(url: url!)
+            request.httpMethod = "POST"
+            
+            let task = URLSession.shared.dataTask(with: request as URLRequest) { (data, responce, error) in
+                
+                if error != nil {
+                    print(error ?? "no errors")
+                } else {
+                    if let urlContent = data {
+                        do {
+                            
+                            let jsonResult = try JSONSerialization.jsonObject(with: urlContent, options: JSONSerialization.ReadingOptions.mutableContainers) as! NSDictionary
+                            
+                            let status = jsonResult.value(forKey: "status") as! String
+                            
+                            if status == "error" {
+                                print("Error: \(jsonResult.value(forKey: "message") as! String)")
+                            }
+                            
+                            if status == "success" {
+                                DispatchQueue.main.async {
+                                    self.messageTextView.text = ""
+                                    self.refreshResults()
+                                }
+                            }
+                            
+                            
+                        } catch {
+                            print("error sending message via api")
+                        }
+                    }
+                }
+                DispatchQueue.main.async {
+                    self.messageTextView.isEditable = true
+                }
+            }
+            task.resume()
+        }
+        
+    }
 
     /*
     // MARK: - Navigation

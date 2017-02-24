@@ -8,7 +8,7 @@
 
 import UIKit
 
-class LoginVC: UIViewController {
+class LoginVC: UIViewController, UITextFieldDelegate {
     
     @IBOutlet weak var titleLabel: UILabel!
     @IBOutlet weak var usernameTxt: UITextField!
@@ -28,6 +28,8 @@ class LoginVC: UIViewController {
         passwordTxt.frame = CGRect(x: 16, y: theHeight/2, width: theWidth - 32, height: 30)
         loginBtn.center = CGPoint(x: theWidth/2, y: theHeight/2 + 60)
         signUpBtn.center = CGPoint(x: theWidth/2, y: theHeight - 30)
+        
+        self.passwordTxt.delegate = self
         
     }
 
@@ -80,6 +82,20 @@ class LoginVC: UIViewController {
         }
         task.resume()
         
+    }
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        usernameTxt.resignFirstResponder()
+        passwordTxt.resignFirstResponder()
+        if textField == passwordTxt {
+            loginBtn_click(self)
+        }
+        
+        return true
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        self.view.endEditing(true)
     }
 
 }
