@@ -8,8 +8,11 @@
 
 import UIKit
 import AWSCore
+import AWSS3
 
-
+var CurrentUser = ""
+let transferManager = AWSS3TransferManager.default()
+let rootURL = "https://rails-api-test-crcnum4.c9users.io/"
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {

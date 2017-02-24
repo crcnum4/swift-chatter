@@ -54,7 +54,7 @@ class SignUpVc: UIViewController, UINavigationControllerDelegate, UIImagePickerC
     }
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
-        if let image = info[UIImagePickerControllerOriginalImage] as? UIImage {
+        if let image = info[UIImagePickerControllerEditedImage] as? UIImage {
             profileImg.image = image
         }
         
@@ -114,7 +114,7 @@ class SignUpVc: UIViewController, UINavigationControllerDelegate, UIImagePickerC
     
     @IBAction func signupBtnClick(_ sender: Any) {
         
-        let rootURL = "https://rails-api-test-crcnum4.c9users.io/"
+//        let rootURL = "https://rails-api-test-crcnum4.c9users.io/"
         
         let username = usernameTxt.text!
         let password = passwordTxt.text!
@@ -143,7 +143,7 @@ class SignUpVc: UIViewController, UINavigationControllerDelegate, UIImagePickerC
                         if status == "success" {
                             DispatchQueue.main.async {
                                 let filename = jsonResult.value(forKey: "imgurl") as! String
-                                if let imageData = UIImageJPEGRepresentation(self.profileImg.image!, 0.8) {
+                                if let imageData = UIImageJPEGRepresentation(self.profileImg.image!, 0.5) {
                                     let fileURL = self.getDocumentsDirectory().appendingPathComponent(filename)
                                     print("fileURL \(fileURL)")
                                     try? imageData.write(to: fileURL)
@@ -151,11 +151,9 @@ class SignUpVc: UIViewController, UINavigationControllerDelegate, UIImagePickerC
                                     let uploadRequest = AWSS3TransferManagerUploadRequest()
                                     uploadRequest!.bucket = "3cschatapp"
                                     uploadRequest!.key = filename
-                                    print(self.getDocumentsDirectory().appendingPathComponent(filename))
                                     uploadRequest!.body = self.getDocumentsDirectory().appendingPathComponent(filename)
                                     print("body: \(uploadRequest!.body)")
                                     
-                                    let transferManager = AWSS3TransferManager.default()
                                     
                                     transferManager.upload(uploadRequest!).continueWith(executor: AWSExecutor.mainThread(), block: { (task:AWSTask<AnyObject>) -> Any? in
                                         if let error = task.error as? NSError {
@@ -169,12 +167,13 @@ class SignUpVc: UIViewController, UINavigationControllerDelegate, UIImagePickerC
                                             } else {
                                                 print("Error uploading: \(uploadRequest!.key!) Error: \(error)")
                                             }
+                                            //run process to destroy the recently created useraccount.
                                             return nil
                                         }
-                                        
-                                        let uploadOutput = task.result
+                            
                                         print("Upload complete for: \(uploadRequest!.key)")
-                                        print("Upload Output contents: \(uploadOutput)")
+//                                        CurrentUser = jsonResult.value(forKey: "id") as! String
+//                                        self.performSegue(withIdentifier: "signupToUserVC", sender: self)
                                         return nil
                                     })
                                 }

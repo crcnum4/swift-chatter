@@ -10,6 +10,9 @@
 		4848646FEBE3C81371F44ACE /* Pods_Chatter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB8B63796B70F3255D3F45F9 /* Pods_Chatter.framework */; };
 		9500F87F1E56971C00F6DCFB /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9500F87E1E56971C00F6DCFB /* CoreGraphics.framework */; };
 		9500F8811E573FD000F6DCFB /* SignUpVc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9500F8801E573FD000F6DCFB /* SignUpVc.swift */; };
+		950A4A681E5DFC1A00A900DC /* UserVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 950A4A671E5DFC1A00A900DC /* UserVC.swift */; };
+		950A4A6A1E5DFCE900A900DC /* ResultsCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 950A4A691E5DFCE900A900DC /* ResultsCell.swift */; };
+		950A4A6C1E5F868C00A900DC /* conversationVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 950A4A6B1E5F868C00A900DC /* conversationVC.swift */; };
 		95A470DA1E55E9B4002CF510 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95A470D91E55E9B4002CF510 /* AppDelegate.swift */; };
 		95A470DC1E55E9B4002CF510 /* LoginVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95A470DB1E55E9B4002CF510 /* LoginVC.swift */; };
 		95A470DF1E55E9B4002CF510 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 95A470DD1E55E9B4002CF510 /* Main.storyboard */; };
@@ -35,6 +38,9 @@
 		6C77E2438CAB77583BD0D9D8 /* Pods-Chatter.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Chatter.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Chatter/Pods-Chatter.debug.xcconfig"; sourceTree = "<group>"; };
 		9500F87E1E56971C00F6DCFB /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		9500F8801E573FD000F6DCFB /* SignUpVc.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SignUpVc.swift; sourceTree = "<group>"; };
+		950A4A671E5DFC1A00A900DC /* UserVC.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserVC.swift; sourceTree = "<group>"; };
+		950A4A691E5DFCE900A900DC /* ResultsCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResultsCell.swift; sourceTree = "<group>"; };
+		950A4A6B1E5F868C00A900DC /* conversationVC.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = conversationVC.swift; sourceTree = "<group>"; };
 		95A470D61E55E9B4002CF510 /* Chatter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Chatter.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		95A470D91E55E9B4002CF510 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		95A470DB1E55E9B4002CF510 /* LoginVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginVC.swift; sourceTree = "<group>"; };
@@ -86,6 +92,9 @@
 				95A470E01E55E9B4002CF510 /* Assets.xcassets */,
 				95A470E21E55E9B4002CF510 /* LaunchScreen.storyboard */,
 				95A470E51E55E9B4002CF510 /* Info.plist */,
+				950A4A671E5DFC1A00A900DC /* UserVC.swift */,
+				950A4A691E5DFCE900A900DC /* ResultsCell.swift */,
+				950A4A6B1E5F868C00A900DC /* conversationVC.swift */,
 			);
 			path = Chatter;
 			sourceTree = "<group>";
@@ -236,6 +245,9 @@
 				95A470DC1E55E9B4002CF510 /* LoginVC.swift in Sources */,
 				9500F8811E573FD000F6DCFB /* SignUpVc.swift in Sources */,
 				95A470DA1E55E9B4002CF510 /* AppDelegate.swift in Sources */,
+				950A4A681E5DFC1A00A900DC /* UserVC.swift in Sources */,
+				950A4A6A1E5DFCE900A900DC /* ResultsCell.swift in Sources */,
+				950A4A6C1E5F868C00A900DC /* conversationVC.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
