@@ -40,6 +40,8 @@ class conversationVC: UIViewController, UIScrollViewDelegate, UITextViewDelegate
     
     var messageArray:Array = [] as Array
     
+    var timer = Timer()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -153,7 +155,12 @@ class conversationVC: UIViewController, UIScrollViewDelegate, UITextViewDelegate
         }
         
         refreshResults()
+        timer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(conversationVC.updateMessages), userInfo: nil, repeats: true)
         
+    }
+    
+    func updateMessages() {
+        self.refreshResults()
     }
 
     override func didReceiveMemoryWarning() {
