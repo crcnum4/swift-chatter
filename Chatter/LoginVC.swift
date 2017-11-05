@@ -70,6 +70,46 @@ class LoginVC: UIViewController, UITextFieldDelegate {
                                 let idnum = jsonResult.value(forKey: "id") as! NSNumber
                                 CurrentUser = "\(idnum.intValue)"
                                 self.passwordTxt.text = ""
+                                let pntoken = jsonResult.value(forKey: "pntoken") as! String
+                                
+                                if pntoken != UserDefaults.standard.object(forKey: "chatterNotificationToken") as! String {
+                                    //need to update token
+                                    let params2 = "user=\(CurrentUser)&pntoken=\(UserDefaults.standard.object(forKey:"chatterNotificationToken") as! String)"
+                                    let url2 = URL(string: rootURL + "updatepn?" + params2.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!)
+                                    
+                                    var request2 = URLRequest(url: url2!)
+                                    request2.httpMethod = "POST"
+                                    
+                                    let task2 = URLSession.shared.dataTask(with: request2 as URLRequest) { (data, responce, error) in
+                                        
+                                        if error != nil {
+                                            print(error ?? "no errors")
+                                        } else {
+                                            if let urlContent = data {
+                                                do {
+                                                    let jsonResult2 = try JSONSerialization.jsonObject(with: urlContent, options: JSONSerialization.ReadingOptions.mutableContainers) as! NSDictionary
+                                                    
+                                                    let status = jsonResult2.value(forKey: "status") as! String
+                                                    
+                                                    if status == "error" {
+                                                        print("Error: \(jsonResult2.value(forKey: "message") as! String)")
+                                                    }
+                                                    
+                                                    if status == "success" {
+                                                        print("pntoken updated")
+                                                    }
+                                                } catch {
+                                                    print("error updating PNToken")
+                                                }
+                                            }
+                                        }
+                                        
+                                    }
+                                    task2.resume()
+                                    
+                                }
+                                
+                                
                                 self.performSegue(withIdentifier: "loginToUserVC", sender: self)
                             }
                         }

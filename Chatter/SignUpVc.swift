@@ -118,8 +118,9 @@ class SignUpVc: UIViewController, UINavigationControllerDelegate, UIImagePickerC
         
         let username = usernameTxt.text!
         let password = passwordTxt.text!
+        let pntoken = UserDefaults.standard.object(forKey: "chatterNotificationToken") as! String
         
-        let params = "user=\(username)&pass=\(password)"
+        let params = "user=\(username)&pass=\(password)&pntoken=\(pntoken)"
         let url = URL(string: rootURL + "register?" + params.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!)
         
         let request = NSMutableURLRequest(url: url!)
@@ -172,14 +173,13 @@ class SignUpVc: UIViewController, UINavigationControllerDelegate, UIImagePickerC
                                         }
                             
                                         print("Upload complete for: \(uploadRequest!.key)")
-//                                        CurrentUser = jsonResult.value(forKey: "id") as! String
-//                                        self.performSegue(withIdentifier: "signupToUserVC", sender: self)
+                                        CurrentUser = jsonResult.value(forKey: "id") as! String
+                                        self.performSegue(withIdentifier: "signupToUserVC", sender: self)
                                         return nil
                                     })
                                 }
                             }
                         }
-                        
                     } catch {
                         print("error creating user")
                     }

@@ -137,12 +137,37 @@ class conversationVC: UIViewController, UIScrollViewDelegate, UITextViewDelegate
     
     override func viewDidAppear(_ animated: Bool) {
         //get the current user first
+        let downloadRequest = AWSS3TransferManagerDownloadRequest()
         var downloadingFileURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(myImg)
         let fileManager = FileManager.default
         if fileManager.fileExists(atPath: downloadingFileURL.path) {
             myImgFile = UIImage(contentsOfFile: downloadingFileURL.path)
         } else {
-            myImgFile = UIImage(named: "User_000000_100")
+            
+            downloadRequest!.bucket = "3cschatapp"
+            downloadRequest!.key = myImg
+            downloadRequest!.downloadingFileURL = downloadingFileURL
+            
+            
+            transferManager.download(downloadRequest!).continueWith(executor: AWSExecutor.mainThread(), block: { (task:AWSTask<AnyObject>) -> Any? in
+                if let error = task.error as? NSError {
+                    if error.domain == AWSS3TransferManagerErrorDomain, let code = AWSS3TransferManagerErrorType(rawValue: error.code) {
+                        switch code {
+                        case .cancelled, .paused:
+                            break
+                        default:
+                            print("Error downloading: \(downloadRequest?.key) Error: \(error)")
+                        }
+                    } else {
+                        print("Error downloading: \(downloadRequest?.key) Error: \(error)")
+                    }
+                    return nil
+                }
+                //successful download
+                self.myImgFile = UIImage(contentsOfFile: downloadingFileURL.path)
+                return nil
+            })
+
         }
         
         //get opp file now
@@ -151,7 +176,31 @@ class conversationVC: UIViewController, UIScrollViewDelegate, UITextViewDelegate
         if fileManager.fileExists(atPath: downloadingFileURL.path) {
             oppImgFile = UIImage(contentsOfFile: downloadingFileURL.path)
         } else {
-            oppImgFile = UIImage(named: "User_000000_100")
+            
+            downloadRequest!.bucket = "3cschatapp"
+            downloadRequest!.key = oppImg
+            downloadRequest!.downloadingFileURL = downloadingFileURL
+            
+            
+            transferManager.download(downloadRequest!).continueWith(executor: AWSExecutor.mainThread(), block: { (task:AWSTask<AnyObject>) -> Any? in
+                if let error = task.error as? NSError {
+                    if error.domain == AWSS3TransferManagerErrorDomain, let code = AWSS3TransferManagerErrorType(rawValue: error.code) {
+                        switch code {
+                        case .cancelled, .paused:
+                            break
+                        default:
+                            print("Error downloading: \(downloadRequest?.key) Error: \(error)")
+                        }
+                    } else {
+                        print("Error downloading: \(downloadRequest?.key) Error: \(error)")
+                    }
+                    return nil
+                }
+                //successful download
+                self.oppImgFile = UIImage(contentsOfFile: downloadingFileURL.path)
+                return nil
+            })
+            
         }
         
         refreshResults()
@@ -211,12 +260,10 @@ class conversationVC: UIViewController, UIScrollViewDelegate, UITextViewDelegate
                                 }
                                 
                                 for i in 0 ..< self.messageArray.count {
-                                    
                                     let message = self.messageArray[i] as! NSDictionary
                                     
                                     if "\((message.value(forKey: "origin") as! NSNumber).intValue)" == CurrentUser {
                                         //message from logged in user.
-                                        
                                         let messageLbl:UILabel = UILabel()
                                         messageLbl.frame = CGRect(x: 0, y: 0, width: self.resultsScrollView.frame.size.width-94, height: CGFloat.greatestFiniteMagnitude)
                                         messageLbl.backgroundColor = UIColor.blue

@@ -9,10 +9,12 @@
 import UIKit
 import AWSCore
 import AWSS3
+import UserNotifications
 
 var CurrentUser = ""
 let transferManager = AWSS3TransferManager.default()
 let rootURL = "https://rails-api-test-crcnum4.c9users.io/"
+var updateToken:Bool = false
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -26,6 +28,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let credentialsProvider = AWSCognitoCredentialsProvider(regionType:.USEast1,identityPoolId:"us-east-1:bc684c7f-4f71-4334-bb2a-d4c87002c784")
         let configuration = AWSServiceConfiguration(region:.USEast1, credentialsProvider:credentialsProvider)
         AWSServiceManager.default().defaultServiceConfiguration = configuration
+        
+        // iOS 10 support
+        if #available(iOS 10, *) {
+            UNUserNotificationCenter.current().requestAuthorization(options:[.badge, .alert, .sound]){ (granted, error) in }
+            application.registerForRemoteNotifications()
+        }
+            // iOS 9 support
+//        else if #available(iOS 9, *) {
+//            UIApplication.shared.registerUserNotificationSettings(UIUserNotificationSettings(types: [.badge, .sound, .alert], categories: nil))
+//            UIApplication.shared.registerForRemoteNotifications()
+//        }
+//            // iOS 8 support
+//        else if #available(iOS 8, *) {
+//            UIApplication.shared.registerUserNotificationSettings(UIUserNotificationSettings(types: [.badge, .sound, .alert], categories: nil))
+//            UIApplication.shared.registerForRemoteNotifications()
+//        }
+            // iOS 7 support
+        else {  
+            application.registerForRemoteNotifications(matching: [.badge, .sound, .alert])
+        }
         
         return true
     }
@@ -51,7 +73,38 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
+    
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        // Convert token to string
+        let deviceTokenString = deviceToken.reduce("", {$0 + String(format: "%02X", $1)})
+        
+        // Print it to console
+        print("APNs device token: \(deviceTokenString)")
+        if UserDefaults.standard.object(forKey: "chatterNotificationToken") == nil {
+            UserDefaults.standard.set(deviceTokenString, forKey: "chatterNotificationToken")
+        }else {
+            if deviceTokenString == UserDefaults.standard.object(forKey: "chatterNotificationToken") as! String {
+                updateToken = false
+            } else {
+                updateToken = true
+                UserDefaults.standard.set(deviceTokenString, forKey: "chatterNotificationToken")
+            }
+        }
+        // Persist it in your backend in case it's new
+        
+    }
+    
+    // Called when APNs failed to register the device for push notifications
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        // Print the error to console (you should alert the user that registration failed)
+        print("APNs registration failed: \(error)")
+    }
 
+    
+    func application(_ application: UIApplication, didReceiveRemoteNotification data: [AnyHashable : Any]) {
+        // Print notification payload data
+        print("Push notification received: \(data)")
+    }
 
 }
 
